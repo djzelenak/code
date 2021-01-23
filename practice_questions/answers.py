@@ -1,9 +1,10 @@
 """
-Now and then I come across programming questions - here is a rough attempt to collect some questions-answers
+Practice solving random problems
 """
 
 
 import click
+import numpy as np
 
 
 @click.group(context_settings={'help_option_names': ['-h', '--help']})
@@ -110,6 +111,84 @@ def phone_number(length, disallowed):
     print('FINAL NUMBERS: {}'.format(final_result[-10:]))
     
     return final_result
+
+
+@cli.command('broken_key', help='A typewriter has a broken key - this function ' \
+                                'takes an input number and a broken key, then ' \
+                                'outputs the next highest possible number to the ' \
+                                'input number that can be written by the typewriter. \n' \
+                                'e.g. broken_key(12345, 2) --> 11999')
+@click.option('-i', '--input-number', type=int, help='The input number')
+@click.option('-b', '--broken', type=int, help='Number between 0-9 representing the broken key')
+def broken_key(input_number, broken):
+    # convert the number to a string, should make it easier to test each digit
+    num = str(input_number)
+    
+    # get the individual digits by converting the string to a list
+    digits = list(num)  # e.g. '1234' --> ['1', '2', '3', '4']
+    number_digits = len(num)
+    
+    for n in range(0, number_digits):
+        if digits[n] == str(broken):
+            # update the broken digit to be the next highest number
+            digits[n] = str(max(0, int(digits[n]) - 1))
+            break
+    
+    # these are the digits that we have to adjust (right of the changed number)
+    update_digits = range(n+1, number_digits) if n+1 < number_digits else []
+
+    for x in update_digits:
+        digits[x] = '9'
+
+    output = int(''.join(digits))
+    print('HIGHEST POSSIBLE NUMBER: {}'.format(output))
+
+    return output
+
+@cli.command('array_match', help='Count how many iterations it takes to match random numbers ' \
+                                 'with a randomly generated array of shape (100,100). ' \
+                                 'The counter will report the number of iterations once any of ' \
+                                 'the following are completed: row, column, diagonal.  ' \
+                                 'All numbers are in the inclusive range of 1 and 1e6.')
+@click.option('-a', '--array', default=None)
+def array_match(array):
+    def check_complete(in_array):
+        vals = [z for z in in_array if z != 0]
+        if len(vals) == 100:
+            return True
+        else:
+            return False
+
+    if not array:
+        array = np.random.randint(1, 1e6, (100, 100))
+
+    collect = np.zeros((100, 100), dtype=np.int8)
+
+    match = False
+    counter = 0
+
+    while not match:
+        counter += 1
+        n = np.random.randint(1, 1e6)
+        if n in array:
+           x, y = np.where(array==n)
+
+           x = x[0]
+           y = y[0]
+
+           collect[(x, y)] = 1
+
+           col = collect[:,y]
+           row = collect[x,:]
+           diag1 = np.diagonal(collect)
+           diag2 = np.diagonal(collect, axis1=1, axis2=0)
+
+           if any(list(map(check_complete, [col, row, diag1, diag2]))):
+               match = True
+
+    print('Number of iterations: {}'.format(counter))
+
+    return counter
 
 
 if __name__ == '__main__':
